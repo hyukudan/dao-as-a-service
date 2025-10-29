@@ -1,0 +1,58 @@
+{
+  "name": "dao-as-a-service",
+  "version": "0.1.0",
+  "description": "No-code platform for creating and managing complex DAOs on Attelyx Chain",
+  "private": true,
+  "workspaces": [
+    "contracts",
+    "frontend",
+    "backend"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces",
+    "test": "npm run test --workspaces",
+    "lint": "npm run lint --workspaces",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
+    "contracts:compile": "npm run compile -w contracts",
+    "contracts:test": "npm run test -w contracts",
+    "contracts:deploy:devnet": "npm run deploy:devnet -w contracts",
+    "contracts:deploy:testnet": "npm run deploy:testnet -w contracts",
+    "contracts:verify": "npm run verify -w contracts",
+    "frontend:dev": "npm run dev -w frontend",
+    "frontend:build": "npm run build -w frontend",
+    "frontend:start": "npm run start -w frontend",
+    "backend:dev": "npm run dev -w backend",
+    "backend:build": "npm run build -w backend",
+    "backend:start": "npm run start -w backend",
+    "dev": "concurrently \"npm run frontend:dev\" \"npm run backend:dev\"",
+    "prepare": "husky install"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "concurrently": "^8.2.2",
+    "husky": "^8.0.3",
+    "lint-staged": "^15.2.0",
+    "prettier": "^3.1.1",
+    "typescript": "^5.3.3"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/attelyx/dao-as-a-service.git"
+  },
+  "keywords": [
+    "dao",
+    "blockchain",
+    "attelyx",
+    "governance",
+    "web3",
+    "defi",
+    "nft",
+    "smart-contracts"
+  ],
+  "author": "Attelyx Team",
+  "license": "MIT"
+}
