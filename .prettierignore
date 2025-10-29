@@ -1,0 +1,52 @@
+# Dependencies
+node_modules
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Build outputs
+dist
+build
+.next
+out
+coverage
+
+# Logs
+*.log
+logs
+
+# Environment
+.env
+.env.*
+
+# Cache
+.cache
+.turbo
+.eslintcache
+
+# Hardhat
+cache
+artifacts
+typechain-types
+
+# Prisma
+prisma/migrations
+
+# Git
+.git
+.github
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Misc
+*.min.js
+*.min.css
+DEPLOYMENT.md
