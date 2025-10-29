@@ -1,0 +1,162 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// DAO Models
+model DAO {
+  id          String   @id @default(cuid())
+  address     String   @unique
+  name        String
+  description String?
+  creator     String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  members   Member[]
+  proposals Proposal[]
+  treasury  Treasury?
+  activity  Activity[]
+
+  @@index([creator])
+  @@index([createdAt])
+}
+
+model Member {
+  id              String   @id @default(cuid())
+  address         String
+  votingPower     BigInt
+  sharePercentage Decimal
+  joinedAt        DateTime @default(now())
+
+  // Relations
+  dao    DAO    @relation(fields: [daoId], references: [id], onDelete: Cascade)
+  daoId  String
+  votes  Vote[]
+
+  @@unique([daoId, address])
+  @@index([address])
+}
+
+enum ProposalState {
+  Pending
+  Active
+  Defeated
+  Succeeded
+  Executed
+  Canceled
+}
+
+model Proposal {
+  id           String        @id @default(cuid())
+  proposalId   BigInt        @unique
+  title        String
+  description  String
+  proposer     String
+  state        ProposalState
+  startBlock   BigInt
+  endBlock     BigInt
+  forVotes     BigInt        @default(0)
+  againstVotes BigInt        @default(0)
+  abstainVotes BigInt        @default(0)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  // Relations
+  dao   DAO    @relation(fields: [daoId], references: [id], onDelete: Cascade)
+  daoId String
+  votes Vote[]
+
+  @@index([daoId])
+  @@index([state])
+  @@index([proposer])
+}
+
+model Vote {
+  id          String   @id @default(cuid())
+  support     Int // 0 = Against, 1 = For, 2 = Abstain
+  votingPower BigInt
+  reason      String?
+  timestamp   DateTime @default(now())
+
+  // Relations
+  member     Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  memberId   String
+  proposal   Proposal @relation(fields: [proposalId], references: [id], onDelete: Cascade)
+  proposalId String
+
+  @@unique([memberId, proposalId])
+  @@index([proposalId])
+}
+
+model Treasury {
+  id               String   @id @default(cuid())
+  balance          BigInt   @default(0)
+  totalDeposits    BigInt   @default(0)
+  totalWithdrawals BigInt   @default(0)
+  updatedAt        DateTime @updatedAt
+
+  // Relations
+  dao          DAO           @relation(fields: [daoId], references: [id], onDelete: Cascade)
+  daoId        String        @unique
+  transactions Transaction[]
+}
+
+enum TransactionType {
+  Deposit
+  Withdrawal
+  Transfer
+}
+
+model Transaction {
+  id        String          @id @default(cuid())
+  type      TransactionType
+  token     String // address(0) for ETH
+  amount    BigInt
+  from      String?
+  to        String?
+  txHash    String          @unique
+  timestamp DateTime        @default(now())
+
+  // Relations
+  treasury   Treasury @relation(fields: [treasuryId], references: [id], onDelete: Cascade)
+  treasuryId String
+
+  @@index([treasuryId])
+  @@index([timestamp])
+}
+
+enum ActivityType {
+  DAOCreated
+  MemberAdded
+  MemberRemoved
+  ProposalCreated
+  VoteCast
+  ProposalExecuted
+  TreasuryDeposit
+  TreasuryWithdrawal
+}
+
+model Activity {
+  id        String       @id @default(cuid())
+  type      ActivityType
+  actor     String
+  metadata  Json // Store additional data as JSON
+  timestamp DateTime     @default(now())
+
+  // Relations
+  dao   DAO    @relation(fields: [daoId], references: [id], onDelete: Cascade)
+  daoId String
+
+  @@index([daoId])
+  @@index([actor])
+  @@index([timestamp])
+}
