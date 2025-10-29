@@ -8,8 +8,9 @@ import { ProposalsTab } from "@/components/dao/ProposalsTab";
 import { MembersTab } from "@/components/dao/MembersTab";
 import { TreasuryTab } from "@/components/dao/TreasuryTab";
 import { OverviewTab } from "@/components/dao/OverviewTab";
+import { ActivityTab } from "@/components/dao/ActivityTab";
 
-type Tab = "overview" | "proposals" | "members" | "treasury";
+type Tab = "overview" | "proposals" | "members" | "treasury" | "activity";
 
 export default function DAODetailPage() {
   const params = useParams();
@@ -45,6 +46,7 @@ export default function DAODetailPage() {
     { id: "proposals" as Tab, name: "Proposals", count: proposalCount },
     { id: "members" as Tab, name: "Members", count: Number(dao.memberCount) },
     { id: "treasury" as Tab, name: "Treasury", count: null },
+    { id: "activity" as Tab, name: "Activity", count: null },
   ];
 
   return (
@@ -109,6 +111,7 @@ export default function DAODetailPage() {
       {activeTab === "treasury" && (
         <TreasuryTab treasuryAddress={dao.treasury as `0x${string}`} />
       )}
+      {activeTab === "activity" && <ActivityTab daoAddress={daoAddress} />}
     </div>
   );
 }

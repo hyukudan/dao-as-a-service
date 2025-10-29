@@ -1,10 +1,15 @@
 "use client";
 
-import { useReadContract, useBalance } from "wagmi";
-import { TreasuryModuleABI } from "@/lib/contracts/abis";
+import { useState } from "react";
+import { useBalance } from "wagmi";
 import { formatEther } from "viem";
+import { DepositModal } from "./DepositModal";
+import { WithdrawModal } from "./WithdrawModal";
 
 export function TreasuryTab({ treasuryAddress }: { treasuryAddress: `0x${string}` }) {
+  const [showDepositModal, setShowDepositModal] = useState(false);
+  const [showWithdrawModal, setShowWithdrawModal] = useState(false);
+
   // Get ETH balance
   const { data: balance } = useBalance({
     address: treasuryAddress,
@@ -14,9 +19,20 @@ export function TreasuryTab({ treasuryAddress }: { treasuryAddress: `0x${string}
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-semibold">Treasury</h2>
-        <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-          Deposit Funds
-        </button>
+        <div className="flex gap-3">
+          <button
+            onClick={() => setShowDepositModal(true)}
+            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+          >
+            Deposit
+          </button>
+          <button
+            onClick={() => setShowWithdrawModal(true)}
+            className="px-4 py-2 border border-red-600 text-red-600 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20"
+          >
+            Withdraw
+          </button>
+        </div>
       </div>
 
       {/* Balance Card */}
@@ -51,6 +67,21 @@ export function TreasuryTab({ treasuryAddress }: { treasuryAddress: `0x${string}
           <p className="text-gray-600 dark:text-gray-400">No transactions yet</p>
         </div>
       </div>
+
+      {/* Modals */}
+      {showDepositModal && (
+        <DepositModal
+          treasuryAddress={treasuryAddress}
+          onClose={() => setShowDepositModal(false)}
+        />
+      )}
+
+      {showWithdrawModal && (
+        <WithdrawModal
+          treasuryAddress={treasuryAddress}
+          onClose={() => setShowWithdrawModal(false)}
+        />
+      )}
     </div>
   );
 }

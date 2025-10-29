@@ -7,6 +7,14 @@ const t = initTRPC.context<Context>().create();
 export const router = t.router;
 export const publicProcedure = t.procedure;
 
+// Helper function to get DAO by address
+async function getDAOByAddress(prisma: Context["prisma"], address: string) {
+  return prisma.dao.findUnique({
+    where: { address },
+    select: { id: true, address: true },
+  });
+}
+
 export const appRouter = router({
   // DAO queries
   dao: router({
@@ -82,9 +90,7 @@ export const appRouter = router({
         })
       )
       .query(async ({ ctx, input }) => {
-        const dao = await ctx.prisma.dao.findUnique({
-          where: { address: input.daoAddress },
-        });
+        const dao = await getDAOByAddress(ctx.prisma, input.daoAddress);
 
         if (!dao) return { proposals: [], total: 0 };
 
@@ -95,7 +101,6 @@ export const appRouter = router({
             take: input.limit,
             orderBy: { createdAt: "desc" },
             include: {
-              votes: true,
               _count: { select: { votes: true } },
             },
           }),
@@ -125,24 +130,27 @@ export const appRouter = router({
     list: publicProcedure
       .input(z.string())
       .query(async ({ ctx, input }) => {
-        const dao = await ctx.prisma.dao.findUnique({
-          where: { address: input },
-        });
+        const dao = await getDAOByAddress(ctx.prisma, input);
 
         if (!dao) return [];
 
         return ctx.prisma.member.findMany({
           where: { daoId: dao.id },
           orderBy: { votingPower: "desc" },
+          select: {
+            id: true,
+            address: true,
+            votingPower: true,
+            sharePercentage: true,
+            joinedAt: true,
+          },
         });
       }),
 
     getByAddress: publicProcedure
       .input(z.object({ daoAddress: z.string(), memberAddress: z.string() }))
       .query(async ({ ctx, input }) => {
-        const dao = await ctx.prisma.dao.findUnique({
-          where: { address: input.daoAddress },
-        });
+        const dao = await getDAOByAddress(ctx.prisma, input.daoAddress);
 
         if (!dao) return null;
 
@@ -155,7 +163,19 @@ export const appRouter = router({
           },
           include: {
             votes: {
-              include: { proposal: true },
+              include: {
+                proposal: {
+                  select: {
+                    id: true,
+                    proposalId: true,
+                    title: true,
+                    state: true,
+                    createdAt: true,
+                  },
+                },
+              },
+              orderBy: { timestamp: "desc" },
+              take: 50, // Limit votes returned
             },
           },
         });
@@ -170,17 +190,16 @@ export const appRouter = router({
           daoAddress: z.string().optional(),
           actor: z.string().optional(),
           type: z.string().optional(),
-          limit: z.number().default(20),
+          limit: z.number().default(20).max(100),
         })
       )
       .query(async ({ ctx, input }) => {
         const where: any = {};
 
         if (input.daoAddress) {
-          const dao = await ctx.prisma.dao.findUnique({
-            where: { address: input.daoAddress },
-          });
+          const dao = await getDAOByAddress(ctx.prisma, input.daoAddress);
           if (dao) where.daoId = dao.id;
+          else return []; // Early return if DAO not found
         }
 
         if (input.actor) {
@@ -195,7 +214,20 @@ export const appRouter = router({
           where,
           take: input.limit,
           orderBy: { timestamp: "desc" },
-          include: { dao: true },
+          select: {
+            id: true,
+            type: true,
+            actor: true,
+            metadata: true,
+            timestamp: true,
+            dao: {
+              select: {
+                id: true,
+                address: true,
+                name: true,
+              },
+            },
+          },
         });
       }),
   }),
@@ -219,30 +251,33 @@ export const appRouter = router({
     }),
 
     dao: publicProcedure.input(z.string()).query(async ({ ctx, input }) => {
-      const dao = await ctx.prisma.dao.findUnique({
-        where: { address: input },
-        include: {
-          _count: {
-            select: {
-              members: true,
-              proposals: true,
-              activity: true,
-            },
-          },
-        },
-      });
+      const dao = await getDAOByAddress(ctx.prisma, input);
 
       if (!dao) return null;
 
-      const activeProposals = await ctx.prisma.proposal.count({
-        where: {
-          daoId: dao.id,
-          state: "Active",
-        },
-      });
+      const [counts, activeProposals] = await Promise.all([
+        ctx.prisma.dao.findUnique({
+          where: { id: dao.id },
+          select: {
+            _count: {
+              select: {
+                members: true,
+                proposals: true,
+                activity: true,
+              },
+            },
+          },
+        }),
+        ctx.prisma.proposal.count({
+          where: {
+            daoId: dao.id,
+            state: "Active",
+          },
+        }),
+      ]);
 
       return {
-        ...dao._count,
+        ...counts?._count,
         activeProposals,
       };
     }),
