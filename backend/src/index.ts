@@ -1,7 +1,10 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
+import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { BlockchainIndexer } from "./indexer/blockchain";
+import { appRouter } from "./trpc/router";
+import { createContext } from "./trpc/context";
 
 dotenv.config({ path: "../.env" });
 
@@ -16,7 +19,14 @@ app.get("/health", (req, res) => {
   res.json({ status: "ok", timestamp: new Date().toISOString() });
 });
 
-// TODO: Add tRPC routes
+// tRPC routes
+app.use(
+  "/trpc",
+  createExpressMiddleware({
+    router: appRouter,
+    createContext,
+  })
+);
 
 app.listen(PORT, () => {
   console.log(`🚀 Backend server running on http://localhost:${PORT}`);
